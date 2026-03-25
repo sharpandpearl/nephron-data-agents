@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/c/Tools/Maven/apache-maven-3.9.12/bin/mvn clean compile)",
+      "Bash(/c/Tools/Maven/apache-maven-3.9.12/bin/mvn package)",
+      "Bash(mvn clean:*)",
+      "Bash(mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args=\"install chromium\")"
+    ]
+  }
+}

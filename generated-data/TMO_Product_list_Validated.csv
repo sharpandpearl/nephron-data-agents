@@ -1,0 +1,11 @@
+ProductID,Status,ResponseTime_s
+01213101,Invalid (Not Found),1.64
+011045H,Valid,1.65
+003002,Invalid (Not Found),1.66
+010075,Valid,1.67
+011045A,Valid,1.68
+011890102,Invalid (Not Found),1.74
+0102322A,Valid,1.79
+01213103,Invalid (Not Found),1.83
+01213102,Invalid (Not Found),1.84
+01060A,Valid,1.88
