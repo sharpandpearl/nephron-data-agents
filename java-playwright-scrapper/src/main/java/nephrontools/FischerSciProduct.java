@@ -1,29 +1,17 @@
-/**
- *
- */
 package nephrontools;
 
 /**
+ * Data model for Fisher Scientific product information
  * @author andri
- *
  */
 public class FischerSciProduct {
 
 	String Product_CatalogNo = "";
 	String Product_Name = "";
 	String Product_Price = "";
-	String Product_ScrapeDate ="";
-
+	String Product_ScrapeDate = "";
 
 	public FischerSciProduct() {
-	}
-
-	public FischerSciProduct(String d, String pName, String pCatalogNo, String pDate) {
-		Product_CatalogNo = pCatalogNo;
-		Product_Name = pName;
-		Product_Price = d;
-		Product_ScrapeDate = pDate;
-		// TODO Auto-generated constructor stub
 	}
 
 	public String getProductPrice() {

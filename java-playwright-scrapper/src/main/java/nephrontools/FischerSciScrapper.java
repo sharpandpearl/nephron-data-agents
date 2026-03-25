@@ -11,8 +11,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.ElementHandle;
@@ -23,9 +21,8 @@ public class FischerSciScrapper {
 
 	static Browser browser = null;
 	static Page page = null;
-	static String baseUrl = "https://www.fishersci.com/us/en/home.html";
 	static String CSV_FILE_PATH = "../generated-data/TMO_Product_list_Valid_Only.csv";
-	static String OUTPUT_JSON_FILE = "../generated-data/playwright_scrape_results.json";
+	static String OUTPUT_CSV_FILE = "../generated-data/playwright_scrape_results.csv";
 	static int START_INDEX = 0;      // Start at first product (0-based index)
 	static int END_INDEX = 25;       // Test on first 25 products
 
@@ -55,17 +52,10 @@ public class FischerSciScrapper {
 
 			ArrayList<FischerSciProduct> myProducts = scrapeFischerSciPricesFromList(page, catalogNumbers);
 
-			// Pretty print JSON
-			Gson gson = new GsonBuilder().setPrettyPrinting().create();
-			String serializedFSProducts = gson.toJson(myProducts);
-
-			System.out.println("\n=== Scraped Data ===");
-			System.out.println(serializedFSProducts);
-
-			// Save to JSON file
+			// Save to CSV file
 			try {
-				saveToJsonFile(serializedFSProducts, OUTPUT_JSON_FILE);
-				System.out.println("\n[OK] Results saved to: " + OUTPUT_JSON_FILE);
+				saveToCsvFile(myProducts, OUTPUT_CSV_FILE);
+				System.out.println("\n[OK] Results saved to: " + OUTPUT_CSV_FILE);
 			} catch (IOException e) {
 				System.err.println("Error saving results to file: " + e.getMessage());
 				e.printStackTrace();
@@ -102,16 +92,25 @@ public class FischerSciScrapper {
 	}
 
 	/**
-	 * Load catalog numbers from CSV file (same as Selenium version)
+	 * Load catalog numbers from CSV file
 	 */
 	public static ArrayList<String> loadCatalogNumbersFromCSV() {
 		ArrayList<String> catalogNumbers = new ArrayList<>();
 
 		try {
-			// Resolve the CSV file path relative to the project root
+			// Resolve the CSV file path - handle both Maven and IDE execution
 			String currentDir = System.getProperty("user.dir");
-			String csvPath = Paths.get(currentDir, CSV_FILE_PATH).toString();
+			String csvPath;
 
+			// If running from java-playwright-scrapper directory (Maven)
+			if (currentDir.endsWith("java-playwright-scrapper")) {
+				csvPath = Paths.get(currentDir, CSV_FILE_PATH).toString();
+			} else {
+				// If running from project root (IDE/VSCode)
+				csvPath = Paths.get(currentDir, "generated-data", "TMO_Product_list_Valid_Only.csv").toString();
+			}
+
+			System.out.println("Current directory: " + currentDir);
 			System.out.println("Reading CSV file from: " + csvPath);
 
 			BufferedReader reader = new BufferedReader(new FileReader(csvPath));
@@ -207,7 +206,7 @@ public class FischerSciScrapper {
 				page.navigate(searchUrl);
 
 				// Wait for page to load (Playwright auto-waits, but adding explicit wait for JS execution)
-				page.waitForTimeout(3000);
+				page.waitForTimeout(1000);
 
 				// Try multiple possible selectors for product title
 				String itemName = "";
@@ -230,9 +229,8 @@ public class FischerSciScrapper {
 					itemName = "Product Not Found";
 				}
 
-				// Try to extract price (same logic as Selenium version)
+				// Try to extract price
 				String price = "0.0";
-				boolean loginRequired = false;
 
 				try {
 					// First attempt: Try multiple price selectors
@@ -282,7 +280,6 @@ public class FischerSciScrapper {
 							pageContent.contains("Sign In or Register to check")) {
 							System.out.println("Login required to view pricing for catalog #" + catalogNum);
 							price = "LOGIN_REQUIRED";
-							loginRequired = true;
 						}
 					}
 				} catch (Exception e) {
@@ -335,37 +332,55 @@ public class FischerSciScrapper {
 	}
 
 	/**
-	 * Save JSON string to file
+	 * Save products to CSV file
 	 */
-	public static void saveToJsonFile(String jsonContent, String filePath) throws IOException {
-		// Resolve the output file path relative to the project root
+	public static void saveToCsvFile(ArrayList<FischerSciProduct> products, String filePath) throws IOException {
+		// Resolve the output file path - handle both Maven and IDE execution
 		String currentDir = System.getProperty("user.dir");
-		String fullPath = Paths.get(currentDir, filePath).toString();
+		String fullPath;
+
+		// If running from java-playwright-scrapper directory (Maven)
+		if (currentDir.endsWith("java-playwright-scrapper")) {
+			fullPath = Paths.get(currentDir, filePath).toString();
+		} else {
+			// If running from project root (IDE/VSCode)
+			fullPath = Paths.get(currentDir, "generated-data", "playwright_scrape_results.csv").toString();
+		}
 
 		FileWriter fileWriter = new FileWriter(fullPath);
-		fileWriter.write(jsonContent);
+
+		// Write CSV header
+		fileWriter.write("CatalogNo,ProductName,Price,ScrapeDate\n");
+
+		// Write each product as a CSV row
+		for (FischerSciProduct product : products) {
+			String catalogNo = escapeCsvField(product.getProductCatalogNo());
+			String productName = escapeCsvField(product.getProductName().trim());
+			String price = escapeCsvField(product.getProductPrice());
+			String scrapeDate = escapeCsvField(product.getScrapeDate());
+
+			fileWriter.write(String.format("%s,%s,%s,%s\n", catalogNo, productName, price, scrapeDate));
+		}
+
 		fileWriter.close();
-
-		System.out.println("JSON output saved to: " + fullPath);
+		System.out.println("CSV output saved to: " + fullPath);
 	}
 
-	public static boolean cssElementExists(String css, Page page) {
-		return page.querySelector(css) != null;
+	/**
+	 * Escape CSV field - wrap in quotes if contains comma, quote, or newline
+	 */
+	private static String escapeCsvField(String field) {
+		if (field == null) {
+			return "";
+		}
+
+		// If field contains comma, quote, or newline, wrap in quotes and escape existing quotes
+		if (field.contains(",") || field.contains("\"") || field.contains("\n")) {
+			return "\"" + field.replace("\"", "\"\"") + "\"";
+		}
+
+		return field;
 	}
-
-	public static boolean idElementExists(String id, Page page) {
-		return page.querySelector("#" + id) != null;
-	}
-
-	public static String getCurrentESTDate() {
-
-		DateTimeFormatter FOMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-		ZonedDateTime nowInLocalTimeZone = ZonedDateTime.now();
-		ZonedDateTime nowInNYC = nowInLocalTimeZone.withZoneSameInstant(ZoneId.of("America/New_York"));
-
-		return nowInNYC.format(FOMATTER);
-	}
-
 
 	public static String getCurrentUTCDate() {
 

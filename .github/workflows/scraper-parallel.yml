@@ -1,0 +1,137 @@
+name: Fisher Scientific Scraper (Parallel)
+
+on:
+  # Run manually
+  workflow_dispatch:
+    inputs:
+      total_products:
+        description: 'Total products to scrape (default: all 2891)'
+        required: false
+        default: '2891'
+
+  # Or run on schedule (example: daily at 2 AM UTC)
+  # schedule:
+  #   - cron: '0 2 * * *'
+
+jobs:
+  scrape-parallel:
+    name: Scrape Chunk ${{ matrix.chunk }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        chunk: [1, 2, 3, 4]  # 4 parallel jobs
+      fail-fast: false  # Continue other jobs even if one fails
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Calculate chunk range
+        id: range
+        run: |
+          TOTAL=${{ github.event.inputs.total_products || '2891' }}
+          CHUNK=${{ matrix.chunk }}
+          CHUNKS=4
+
+          # Calculate products per chunk
+          PER_CHUNK=$((TOTAL / CHUNKS))
+
+          # Calculate start and end for this chunk
+          START=$(( (CHUNK - 1) * PER_CHUNK ))
+
+          # Last chunk gets any remainder
+          if [ $CHUNK -eq $CHUNKS ]; then
+            END=$TOTAL
+          else
+            END=$((CHUNK * PER_CHUNK))
+          fi
+
+          echo "start=$START" >> $GITHUB_OUTPUT
+          echo "end=$END" >> $GITHUB_OUTPUT
+          echo "Chunk $CHUNK: Products $START to $END ($(($END - $START)) products)"
+
+      - name: Update scraper configuration
+        run: |
+          # Update START_INDEX and END_INDEX for this chunk
+          sed -i "s/static int START_INDEX = .*/static int START_INDEX = ${{ steps.range.outputs.start }};/" \
+            java-playwright-scrapper/src/main/java/nephrontools/FischerSciScrapper.java
+          sed -i "s/static int END_INDEX = .*/static int END_INDEX = ${{ steps.range.outputs.end }};/" \
+            java-playwright-scrapper/src/main/java/nephrontools/FischerSciScrapper.java
+
+      - name: Install Playwright browsers
+        run: |
+          cd java-playwright-scrapper
+          mvn clean compile
+          # Install Playwright browsers for headless mode
+          mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"
+
+      - name: Run scraper for chunk ${{ matrix.chunk }}
+        run: |
+          cd java-playwright-scrapper
+          mvn exec:java -Dexec.mainClass="nephrontools.FischerSciScrapper"
+
+      - name: Rename chunk output
+        run: |
+          # Rename to include chunk number
+          mv generated-data/playwright_scrape_results.csv \
+             generated-data/playwright_scrape_results_chunk_${{ matrix.chunk }}.csv
+
+      - name: Upload chunk results
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrape-results-chunk-${{ matrix.chunk }}
+          path: generated-data/playwright_scrape_results_chunk_${{ matrix.chunk }}.csv
+          retention-days: 7
+
+  combine-results:
+    name: Combine Results
+    runs-on: ubuntu-latest
+    needs: scrape-parallel  # Wait for all parallel jobs to complete
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all chunks
+        uses: actions/download-artifact@v4
+        with:
+          path: chunks/
+
+      - name: Combine CSV files
+        run: |
+          mkdir -p generated-data
+
+          # Extract header from first chunk
+          find chunks/scrape-results-chunk-1 -name "*.csv" -exec head -n 1 {} \; > generated-data/playwright_scrape_results.csv
+
+          # Append data from all chunks (skip headers)
+          for i in 1 2 3 4; do
+            echo "Processing chunk $i..."
+            find chunks/scrape-results-chunk-$i -name "*.csv" -exec tail -n +2 {} \; >> generated-data/playwright_scrape_results.csv
+          done
+
+          # Show summary
+          echo "Combined CSV line count:"
+          wc -l generated-data/playwright_scrape_results.csv
+
+      - name: Upload combined results
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrape-results-combined-${{ github.run_number }}
+          path: generated-data/playwright_scrape_results.csv
+
+      - name: Commit results (optional)
+        if: github.event_name == 'schedule'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add generated-data/playwright_scrape_results.csv
+          git commit -m "Update scrape results (parallel run) - $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+          git push

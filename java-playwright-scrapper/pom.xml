@@ -23,13 +23,6 @@
             <artifactId>playwright</artifactId>
             <version>1.49.0</version>
         </dependency>
-
-        <!-- Gson for JSON serialization -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.11.0</version>
-        </dependency>
     </dependencies>
 
     <build>

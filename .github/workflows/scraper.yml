@@ -1,0 +1,103 @@
+name: Fisher Scientific Scraper
+
+on:
+  # Run manually
+  workflow_dispatch:
+    inputs:
+      company_ticker:
+        description: 'Company ticker symbol (e.g., TMO, PFE)'
+        required: true
+        default: '123CATCH'
+      start_index:
+        description: 'Start index (0-based)'
+        required: true
+        default: '0'
+      end_index:
+        description: 'End index (-1 for all)'
+        required: true
+        default: '25'
+
+  # Or run on schedule (example: daily at 2 AM UTC)
+  # schedule:
+  #   - cron: '0 2 * * *'
+
+jobs:
+  scrape:
+    name: Scrape Product Details
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Update scraper configuration
+        run: |
+          # Update START_INDEX and END_INDEX from workflow inputs
+          sed -i "s/static int START_INDEX = .*/static int START_INDEX = ${{ github.event.inputs.start_index }};/" \
+            java-playwright-scrapper/src/main/java/nephrontools/FischerSciScrapper.java
+          sed -i "s/static int END_INDEX = .*/static int END_INDEX = ${{ github.event.inputs.end_index }};/" \
+            java-playwright-scrapper/src/main/java/nephrontools/FischerSciScrapper.java
+
+      - name: Install Playwright browsers
+        run: |
+          cd java-playwright-scrapper
+          mvn clean compile
+          # Install Playwright browsers for headless mode
+          mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"
+
+      - name: Run scraper
+        run: |
+          cd java-playwright-scrapper
+          mvn exec:java -Dexec.mainClass="nephrontools.FischerSciScrapper"
+
+      - name: Generate timestamp and rename CSV
+        id: timestamp
+        run: |
+          TIMESTAMP=$(date -u '+%Y-%m-%d_%H%M%S')
+          TICKER="${{ github.event.inputs.company_ticker }}"
+
+          FILENAME="playwright_scrape_results_${TIMESTAMP}.csv"
+          R2_PATH="nephron-data/${TICKER}/${FILENAME}"
+
+          # Rename the file
+          mv generated-data/playwright_scrape_results.csv "generated-data/${FILENAME}"
+
+          # Export for next steps
+          echo "filename=${FILENAME}" >> $GITHUB_OUTPUT
+          echo "r2_path=${R2_PATH}" >> $GITHUB_OUTPUT
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+
+          echo "Generated filename: ${FILENAME}"
+          echo "Will upload to: ${R2_PATH}"
+
+      - name: Upload to Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.NEPHRON_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.NEPHRON_R2_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: https://203c00261e5e7220493ac31a64043f00.r2.cloudflarestorage.com
+        run: |
+          # Install AWS CLI
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+          # Upload to R2 (S3-compatible)
+          aws s3 cp \
+            "generated-data/${{ steps.timestamp.outputs.filename }}" \
+            "s3://${{ steps.timestamp.outputs.r2_path }}" \
+            --endpoint-url $AWS_ENDPOINT_URL
+
+          echo "✅ Successfully uploaded to R2: ${{ steps.timestamp.outputs.r2_path }}"
+
+      - name: Upload scrape results (GitHub artifact backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrape-results-${{ github.run_number }}
+          path: generated-data/${{ steps.timestamp.outputs.filename }}
+

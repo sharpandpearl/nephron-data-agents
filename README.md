@@ -1,115 +1,40 @@
-# Fisher Scientific Scraper - Complete Project
+# Fisher Scientific Product Scraper
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 Web scraper and catalog validator for extracting product data from Fisher Scientific's website.
 
-## 🎯 Project Overview
+## Project Overview
 
-This repository contains multiple implementations for scraping and validating Fisher Scientific product catalogs:
+This repository contains tools for validating and scraping Fisher Scientific product catalogs:
 
-1. **Python Validator** - Fast HTTP-based catalog ID validation (Recommended for validation)
-2. **Playwright Scraper** - Browser-based scraping with detailed product data
-3. **Java/Selenium** - Legacy production scraper (modernized)
-4. **MCP Integration** - Model Context Protocol integration
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-Web scraper for extracting product data from Fisher Scientific's website.
+1. **Python Validator** - Fast HTTP-based catalog ID validation (~6 IDs/sec)
+2. **Java Playwright Scraper** - Browser-based scraping with detailed product data
+3. **CSV Data Processing** - Input/output handling for catalog numbers and results
 
-## 🎯 Project Overview
-
-This repository contains multiple implementations of a Fisher Scientific product scraper:
-
-1. **Java/Selenium** - Production-ready, modernized scraper
-2. **MCP Integration** - Modern approach using Model Context Protocol
-3. **Documentation** - Comprehensive guides and examples
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-nephron-scrapper/
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-├── source-data/                        # Input data files
+nephron-data-agents/
+├── source-data/                        # Input data files (never modify)
 │   └── TMO_Product_list.csv           # Source catalog IDs (8,675 products)
 │
-├── generated-data/                     # All output files
+├── generated-data/                     # All output files (auto-generated)
 │   ├── TMO_Product_list_Validated.csv # Full validation results
 │   ├── TMO_Product_list_Valid_Only.csv # Valid products only
 │   ├── TMO_Valid_CatalogIDs.txt       # Valid IDs (text file)
-│   ├── fisher_sci_results.json        # Playwright scrape results
-│   └── fisher_sci_validation.csv      # Playwright validation output
+│   └── playwright_scrape_results.csv  # Java Playwright scrape results
 │
-├── playwright-mcp-scraper/             # Browser-based scraper
-│   ├── demo_mcp_usage.js              # Main Playwright scraper
-│   ├── MCP_USAGE_GUIDE.md             # MCP integration guide
-│   ├── QUICK_START.md                  # Quick reference
-│   ├── package.json                    # Node.js dependencies
-│   └── node_modules/                   # Installed packages
+├── java-playwright-scrapper/           # Java browser automation
+│   ├── src/main/java/nephrontools/
+│   │   ├── FischerSciScrapper.java    # Main scraper
+│   │   └── FischerSciProduct.java     # Data model
+│   ├── pom.xml                         # Maven config
+│   └── target/                         # Build artifacts
 │
-├── NephronSelenium/                    # Java/Maven scraper (legacy)
-│   ├── src/main/java/tmo/
-│   │   ├── FischerSciScrapper.java    # Main Java scraper
-│   │   └── FischerSciProduct.java      # Data model
-│   └── pom.xml                         # Maven dependencies (updated)
-│
-├── .claude/                            # Claude Code configuration
-│   ├── .mcp.json                       # MCP server configuration
-│   └── settings.local.json             # Local settings
-│
-├── validate_fisher_sci_catalog.py      # Fast HTTP-based validator ⭐
-├── HOW_TO_USE_MCP_SERVERS.md          # Complete MCP guide
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-├── NephronSelenium/                    # Main Java scraper
-│   ├── src/main/java/tmo/
-│   │   ├── FischerSciScrapper.java    # Main scraper (modernized)
-│   │   └── FischerSciProduct.java      # Data model
-│   ├── pom.xml                         # Maven dependencies (updated)
-│   └── .mcp.json                       # MCP server configuration
-│
-├── playwright-mcp-scraper/             # MCP-based scraper examples
-│   ├── MCP_USAGE_GUIDE.md             # How to use MCP servers
-│   ├── QUICK_START.md                  # Quick reference
-<<<<<<< Updated upstream
-│   └── demo_mcp_usage.js              # Node.js demo
-│
-├── HOW_TO_USE_MCP_SERVERS.md          # Complete MCP guide
-├── MIGRATION_SUMMARY.md                # What was changed
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
-│   ├── demo_mcp_usage.js              # Node.js demo
-│   └── fisher_sci_scraper_simple.py   # Python wrapper
-│
-├── HOW_TO_USE_MCP_SERVERS.md          # Complete MCP guide
-├── MIGRATION_SUMMARY.md                # What was changed
->>>>>>> Stashed changes
-└── README.md                           # This file
+└── validate_fisher_sci_catalog.py     # Fast HTTP-based validator
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 ### Option 1: Validate Catalog IDs (Fastest - Recommended)
 
 **Purpose:** Quickly validate which catalog IDs exist on Fisher Scientific's website.
@@ -125,11 +50,11 @@ nephron-scrapper/
 
 ```bash
 # Validate all catalog IDs (production mode)
-python3 validate_fisher_sci_catalog.py
+python validate_fisher_sci_catalog.py
 
 # Test mode (first 1,000 products)
 # Edit validate_fisher_sci_catalog.py: TEST_MODE = True
-python3 validate_fisher_sci_catalog.py
+python validate_fisher_sci_catalog.py
 ```
 
 **Configuration:**
@@ -163,54 +88,44 @@ TEST_LIMIT = 1000       # Test mode limit
 - ✅ Extracts product name, price, availability
 - ✅ Detects login requirements
 - ✅ Configurable range (for testing)
-- ✅ JSON and CSV output
-- ⚠️ Slower (~15s per product with timeout)
+- ✅ CSV output format
 
 **Usage:**
 
 ```bash
-cd playwright-mcp-scraper
-node demo_mcp_usage.js
+cd java-playwright-scrapper
+mvn clean compile
+mvn exec:java -Dexec.mainClass="nephrontools.FischerSciScrapper"
 ```
 
 **Configuration:**
 
-```javascript
-// In demo_mcp_usage.js
-const START_INDEX = 0;      // Start at first product
-const END_INDEX = 10;       // End at 10th product (-1 for all)
-const TIMEOUT_MS = 15000;   // Page load timeout
+```java
+// In FischerSciScrapper.java
+static String CSV_FILE_PATH = "../generated-data/TMO_Product_list_Valid_Only.csv";
+static String OUTPUT_CSV_FILE = "../generated-data/playwright_scrape_results.csv";
+static int START_INDEX = 0;      // Start at first product
+static int END_INDEX = 10;       // End at 10th product (-1 for all)
 ```
 
 **Output Files:**
-- `generated-data/fisher_sci_results.json` - Full product data
-- `generated-data/fisher_sci_validation.csv` - Validation status
+- `generated-data/playwright_scrape_results.csv` - Full product data and prices
 
-### Option 3: Java/Selenium (Legacy)
+## Requirements
 
-**Purpose:** Production-ready scraper using Java and Selenium.
-=======
-### Option 1: Java/Selenium (Recommended for Production)
->>>>>>> Stashed changes
-=======
-### Option 1: Java/Selenium (Recommended for Production)
->>>>>>> Stashed changes
-=======
-### Option 1: Java/Selenium (Recommended for Production)
->>>>>>> Stashed changes
+### Python Validator
+- Python 3.12+
+- Dependencies: `pandas`, `requests`
 
 ```bash
-cd NephronSelenium
-mvn clean compile
-mvn exec:java -Dexec.mainClass="tmo.FischerSciScrapper"
+pip install pandas requests
 ```
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-**Status:** ✅ Fully working, modernized (Selenium 4.27.0)
+### Java Playwright Scraper
+- Java 21+
+- Maven 3.9.12+
 
-## 📊 Validation Logic
+## Validation Logic
 
 The validator uses a **conservative validation approach** to ensure accuracy:
 
@@ -224,7 +139,6 @@ The validator uses a **conservative validation approach** to ensure accuracy:
 - ❌ Stays on search results page
 - ❌ URL doesn't end with catalog ID
 - ❌ HTTP 404 or 403 errors
-- ❌ Not available / Not web orderable
 
 ### Example URLs:
 
@@ -241,59 +155,26 @@ https://www.fishersci.com/us/en/catalog/search/products?keyword=011890102
 (Stays on search page - product not available)
 ```
 
-## 🔧 Requirements
-
-### Python Validator (Recommended)
-- Python 3.12+
-- Dependencies: `pandas`, `requests`
-
-```bash
-pip install pandas requests
-```
-
-### Playwright Scraper
-- Node.js 24.13.1+
-- Playwright installed
-
-```bash
-cd playwright-mcp-scraper
-npm install
-```
-
-### Java Scraper (Optional)
-- Java 21+
-- Maven 3.9.12+
-
-## ✨ Features Comparison
+## Features Comparison
 
 | Tool | Speed | Data Depth | Browser | Use Case |
 |------|-------|------------|---------|----------|
 | **Python Validator** | ⚡ 6.1/s | Basic (exists?) | ❌ No | Validate catalog IDs |
-| **Playwright Scraper** | 🐌 ~0.07/s | Detailed | ✅ Yes | Product details |
-| **Java/Selenium** | 🐌 ~0.2/s | Detailed | ✅ Yes | Legacy production |
-| **MCP Integration** | 🐌 ~0.3/s | Detailed | ✅ Yes | Claude integration |
+| **Java Playwright** | 🐌 ~0.2/s | Detailed | ✅ Yes | Product details + prices |
 
-## 📚 Documentation
-
-- **[validate_fisher_sci_catalog.py](validate_fisher_sci_catalog.py)** - Main validator script
-- **[demo_mcp_usage.js](playwright-mcp-scraper/demo_mcp_usage.js)** - Playwright scraper
-- **[HOW_TO_USE_MCP_SERVERS.md](HOW_TO_USE_MCP_SERVERS.md)** - MCP integration guide
-- **[MCP_USAGE_GUIDE.md](playwright-mcp-scraper/MCP_USAGE_GUIDE.md)** - Detailed MCP guide
-- **[QUICK_START.md](playwright-mcp-scraper/QUICK_START.md)** - Quick reference
-
-## 🎓 Workflows
+## Recommended Workflows
 
 ### Workflow 1: Validate & Filter (Recommended)
 
 ```bash
 # Step 1: Validate all catalog IDs (24 minutes)
-python3 validate_fisher_sci_catalog.py
+python validate_fisher_sci_catalog.py
 
 # Step 2: Review results
 cat generated-data/TMO_Product_list_Validated.csv
 
-# Step 3: Extract valid IDs only
-grep ",Valid," generated-data/TMO_Product_list_Validated.csv | cut -d',' -f1 > generated-data/TMO_Valid_CatalogIDs.txt
+# Step 3: Extract valid IDs only (already done by validator)
+# File: generated-data/TMO_Product_list_Valid_Only.csv
 
 # Result: 2,892 valid catalog IDs ready for scraping
 ```
@@ -302,13 +183,13 @@ grep ",Valid," generated-data/TMO_Product_list_Validated.csv | cut -d',' -f1 > g
 
 ```bash
 # Use the 2,892 valid catalog IDs as input
-cd playwright-mcp-scraper
+cd java-playwright-scrapper
 
-# Configure range in demo_mcp_usage.js
+# Configure range in FischerSciScrapper.java
 # START_INDEX = 0
 # END_INDEX = 100  # Or -1 for all 2,892 valid products
 
-node demo_mcp_usage.js
+mvn clean compile exec:java -Dexec.mainClass="nephrontools.FischerSciScrapper"
 ```
 
 ### Workflow 3: Test Before Production
@@ -316,15 +197,15 @@ node demo_mcp_usage.js
 ```bash
 # Test validation on first 100 products
 # Edit validate_fisher_sci_catalog.py: TEST_MODE = True, TEST_LIMIT = 100
-python3 validate_fisher_sci_catalog.py
+python validate_fisher_sci_catalog.py
 
 # Test scraping on first 10 products
-# demo_mcp_usage.js already defaults to END_INDEX = 10
-cd playwright-mcp-scraper
-node demo_mcp_usage.js
+# FischerSciScrapper.java already defaults to END_INDEX = 10
+cd java-playwright-scrapper
+mvn exec:java -Dexec.mainClass="nephrontools.FischerSciScrapper"
 ```
 
-## 📈 Performance Statistics
+## Performance Statistics
 
 ### Full Validation Run (8,675 products)
 ```
@@ -339,13 +220,13 @@ Throughput:         6.1 IDs/second
 
 ### Estimated Time Comparisons
 
-| Task | Products | Python Validator | Playwright | Java/Selenium |
-|------|----------|------------------|------------|---------------|
-| Validate 8,675 | Full dataset | 24 min | 36 hours | 12 hours |
-| Scrape 2,892 | Valid only | N/A | 12 hours | 4 hours |
-| Test 100 | Sample | 16 sec | 25 min | 8 min |
+| Task | Products | Python Validator | Java Playwright |
+|------|----------|------------------|-----------------|
+| Validate 8,675 | Full dataset | 24 min | N/A |
+| Scrape 2,892 | Valid only | N/A | ~4 hours |
+| Test 100 | Sample | 16 sec | ~8 min |
 
-## 🔐 Best Practices
+## Best Practices
 
 ### Rate Limiting
 - ✅ Validator: Uses concurrent requests with timeout
@@ -353,7 +234,7 @@ Throughput:         6.1 IDs/second
 - ✅ Respects website policies
 
 ### Error Handling
-- ✅ Timeout handling (5s for validator, 15s for scraper)
+- ✅ Timeout handling (5s for validator, 3s page wait for scraper)
 - ✅ Connection error recovery
 - ✅ Invalid product detection
 - ✅ Progress tracking with ETA
@@ -361,10 +242,10 @@ Throughput:         6.1 IDs/second
 ### Data Quality
 - ✅ Conservative validation (only mark valid if URL confirms)
 - ✅ Checks actual product page URLs
-- ✅ Detects "not available" and "not web orderable" products
+- ✅ Detects "LOGIN_REQUIRED" for restricted products
 - ✅ Filters out search results pages
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Python Validator Issues
 
@@ -386,24 +267,24 @@ MAX_WORKERS = 15
 TIMEOUT = 3
 ```
 
-### Playwright Scraper Issues
+### Java Scraper Issues
 
-**Module not found:**
+**Maven not found:**
 ```bash
-cd playwright-mcp-scraper
-npm install
+mvn --version
+# If not found, ensure Maven is installed and on PATH
 ```
 
-**Timeout errors:**
-```javascript
-// Increase timeout in demo_mcp_usage.js
-const TIMEOUT_MS = 30000;  // 30 seconds
+**Compilation errors:**
+```bash
+cd java-playwright-scrapper
+mvn clean install
 ```
 
 **CSV file not found:**
 ```bash
 # Verify source data location
-ls -la source-data/TMO_Product_list.csv
+ls -la generated-data/TMO_Product_list_Valid_Only.csv
 ```
 
 ### General Issues
@@ -417,7 +298,7 @@ mkdir -p generated-data
 ls -ld generated-data/
 ```
 
-## 📝 File Formats
+## File Formats
 
 ### Input: TMO_Product_list.csv
 ```csv
@@ -427,7 +308,7 @@ ls -ld generated-data/
 - Total: 8,675 catalog IDs
 - Location: `source-data/TMO_Product_list.csv`
 
-### Output: Validation Results
+### Output: Validation Results (CSV)
 ```csv
 ProductID,Status,ResponseTime_s
 003002,Invalid (Not Found),1.23
@@ -435,7 +316,14 @@ ProductID,Status,ResponseTime_s
 011890102,Invalid (Not Found),1.45
 ```
 
-### Output: Valid IDs Only
+### Output: Scrape Results (CSV)
+```csv
+CatalogNo,ProductName,Price,ScrapeDate
+01060A,Thermo Scientific™ Nalgene™ Vacuum Chamber,602.00,2026-03-25T19:33:35Z
+010075,Action Pump Stainless-Steel Piston Pump,398.50,2026-03-25T19:33:52Z
+```
+
+### Output: Valid IDs Only (TXT)
 ```
 010075
 0102322A
@@ -444,277 +332,45 @@ ProductID,Status,ResponseTime_s
 ...
 ```
 
-## 🔌 MCP Integration
+## Technology Stack
 
-MCP servers configured in `.claude/.mcp.json`:
+### Java Module
+- **Java Version**: 21
+- **Build Tool**: Maven 3.9.12
+- **Dependencies**:
+  - Playwright for Java 1.49.0 (browser automation)
 
-### Playwright MCP
-- **Purpose:** Browser automation for Claude
-- **Command:** `npx @playwright/mcp@latest`
-- **Use case:** Ask Claude to scrape products
+### Python Module
+- **Python Version**: 3.12+
+- **Dependencies**:
+  - pandas (CSV processing)
+  - requests (HTTP validation)
 
-### Context7 MCP
-- **Purpose:** Context/memory management
-- **Command:** `npx -y @upstash/context7-mcp`
-- **Use case:** Store scraping history
-
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-**Status:** ✅ Fully working, modernized, ready to use
-
-**Features:**
-- Automated ChromeDriver management via WebDriverManager
-- Latest Selenium 4.27.0 and Gson 2.11.0
-- Scrapes product names, prices, catalog numbers
-- Exports to JSON
-- API integration ready
-
-### Option 2: MCP-Based Scraping (Modern Approach)
-
-If using Claude Desktop or MCP-enabled client:
-
-```
-Ask Claude: "Use Playwright MCP to scrape Fisher Scientific product #10000475"
-```
-
-**Status:** ✅ Configured, ready for MCP clients
-
-## 📚 Documentation
-
-- **[HOW_TO_USE_MCP_SERVERS.md](HOW_TO_USE_MCP_SERVERS.md)** - Complete guide to using MCP servers
-- **[MIGRATION_SUMMARY.md](MIGRATION_SUMMARY.md)** - Details of modernization changes
-- **[MCP_USAGE_GUIDE.md](playwright-mcp-scraper/MCP_USAGE_GUIDE.md)** - MCP integration patterns
-- **[QUICK_START.md](playwright-mcp-scraper/QUICK_START.md)** - Quick reference guide
-
-## 🔧 Requirements
-
-### Java Scraper
-- Java 21+ (OpenJDK 21.0.4 installed ✅)
-- Maven 3.9.12+ (installed ✅)
-
-### MCP Scraper (Optional)
-- Node.js 24.13.1+ (installed ✅)
-- Python 3.12+ (installed ✅)
-- Claude Desktop or MCP-enabled client
-
-## ✨ Features
-
-### Java/Selenium Scraper
-- ✅ Automatic ChromeDriver management
-- ✅ Headless browser support
-- ✅ Product name extraction
-- ✅ Price extraction with login detection
-- ✅ JSON export
-- ✅ API integration (configurable)
-- ✅ Error handling and recovery
-- ✅ Catalog range iteration
-
-### MCP Integration
-- ✅ Playwright MCP server configured
-- ✅ Context7 MCP server configured
-- ✅ Natural language scraping via Claude
-- ✅ Session memory and context
-- ✅ Demo scripts provided
-
-## 📊 Recent Updates
-
-### ✅ Modernization (Completed)
-- Updated Selenium: 4.1.2 → 4.27.0
-- Updated Gson: 2.8.9 → 2.11.0
-- Added WebDriverManager 5.9.2
-- Removed hardcoded ChromeDriver paths
-- Improved error handling
-- Modern Chrome options
-
-### ✅ MCP Setup (Completed)
-- Installed Node.js v24.13.1
-- Configured Playwright MCP server
-- Configured Context7 MCP server
-- Created demo scripts
-- Comprehensive documentation
-
-## 🎓 How It Works
-
-### Java/Selenium Flow
-
-```
-1. Configure catalog range (e.g., 10000-10010)
-2. WebDriverManager downloads ChromeDriver
-3. For each catalog number:
-   - Navigate to Fisher Scientific search page
-   - Extract product name from h1 tag
-   - Extract price (or detect login requirement)
-   - Store in FischerSciProduct object
-4. Export all products to JSON
-5. Optional: POST to API endpoint
-```
-
-### MCP Flow (via Claude)
-
-```
-1. You ask Claude to scrape a product
-2. Claude uses Playwright MCP server
-3. Server launches browser and navigates
-4. Data extracted and returned to Claude
-5. Claude presents results to you
-6. Optional: Store in Context7 for memory
-```
-
-## 🔌 MCP Servers
-
-Configured in `NephronSelenium/.mcp.json`:
-
-### Playwright MCP
-**Purpose:** Browser automation
-**Command:** `npx @playwright/mcp@latest`
-**Use for:** Scraping, navigation, screenshots
-
-### Context7 MCP
-**Purpose:** Context/memory management
-**Command:** `npx -y @upstash/context7-mcp`
-**Use for:** Storing scraping history, tracking changes
-
-## 📝 Configuration
-
-### Customize Catalog Range
-
-**Java version:**
-```java
-// In FischerSciScrapper.java
-static int fsProductID_start = 10000;
-static int fsProductID_end = 10010;
-```
-
-### Update API Endpoint
-
-```java
-// In FischerSciScrapper.java
-public static String postScrapedData(String jsonString) throws IOException {
-    URL url = new URL("http://your-api-endpoint.com/api/store-data");
-    // ...
-}
-```
-
-## 🐛 Troubleshooting
-
-### Java Issues
-
-**Maven not found:**
-```bash
-export PATH="/c/Tools/Maven/apache-maven-3.9.12/bin:$PATH"
-```
-
-**Compilation errors:**
-```bash
-cd NephronSelenium
-mvn clean install
-```
-
-### MCP Issues
-
-**Node.js not found:**
-```bash
-export PATH="/c/Program Files/nodejs:$PATH"
-```
-
-**MCP server won't start:**
-- Verify `npx @playwright/mcp@latest` works
-- Check `.mcp.json` configuration
-- Ensure Claude Desktop is MCP-enabled
-
-## 📈 Performance
-
-| Implementation | Speed | Setup Time | Maintenance |
-|----------------|-------|------------|-------------|
-| Java/Selenium | ~5s/product | 2 min | Low |
-| MCP (via Claude) | ~3s/product | 0 min | None |
-
-## 🔐 Security Notes
-
-- Scraper respects robots.txt
-- Includes delays between requests
-- Detects and handles login requirements
-- No credentials stored in code
-- API endpoint configurable
-
-## 🛠️ Development
-
-### Build Java Scraper
-
-```bash
-cd NephronSelenium
-mvn clean compile package
-```
-
-### Run Tests
-
-```bash
-# Test MCP setup
-cd playwright-mcp-scraper
-python3 test_mcp.py
-
-# Test Java scraper
-cd NephronSelenium
-mvn test
-```
-
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-## 📄 License
+## License
 
 Same as original project.
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-## 👤 Contributors
+## Contributors
 
 - Original Author: andri
-- Modernization & Validation: Claude (Anthropic)
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-## 👤 Author
+- Modernization & Updates: Claude (Anthropic)
 
-Original: andri
-Modernization: Claude (Anthropic)
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-
-## 🔗 Resources
+## Resources
 
 - [Fisher Scientific](https://www.fishersci.com/)
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 - [Python Requests](https://requests.readthedocs.io/)
 - [Playwright](https://playwright.dev/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 
 ---
 
-## 🎯 Recommended Workflow
+## Recommended Approach
 
-**For most users, we recommend:**
+**For most users:**
 
 1. **Start with validation** (24 minutes):
    ```bash
-   python3 validate_fisher_sci_catalog.py
+   python validate_fisher_sci_catalog.py
    ```
 
 2. **Review valid products** (2,892 found):
@@ -722,36 +378,11 @@ Modernization: Claude (Anthropic)
    head generated-data/TMO_Valid_CatalogIDs.txt
    ```
 
-3. **Scrape details only for valid products** (optional):
+3. **Scrape details only for valid products**:
    ```bash
-   cd playwright-mcp-scraper
-   # Configure range in demo_mcp_usage.js
-   node demo_mcp_usage.js
+   cd java-playwright-scrapper
+   # Configure range in FischerSciScrapper.java
+   mvn exec:java -Dexec.mainClass="nephrontools.FischerSciScrapper"
    ```
 
 This approach saves time by validating first, then scraping only valid products! 🚀
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-- [Selenium Documentation](https://www.selenium.dev/)
-- [Playwright MCP](https://github.com/microsoft/playwright-mcp)
-- [Model Context Protocol](https://modelcontextprotocol.io/)
-- [WebDriverManager](https://github.com/bonigarcia/webdrivermanager)
-
----
-
-**Ready to scrape?** Start with the Java scraper for immediate results!
-
-```bash
-cd NephronSelenium
-mvn exec:java -Dexec.mainClass="tmo.FischerSciScrapper"
-```
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
