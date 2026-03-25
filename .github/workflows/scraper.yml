@@ -83,10 +83,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NEPHRON_R2_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: https://203c00261e5e7220493ac31a64043f00.r2.cloudflarestorage.com
         run: |
-          # Install AWS CLI v2
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip -q awscliv2.zip
-          sudo ./aws/install
+          # AWS CLI is pre-installed on GitHub runners
+          aws --version
 
           # Upload to R2 (S3-compatible)
           aws s3 cp \
