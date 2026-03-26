@@ -17,9 +17,9 @@ on:
         required: true
         default: '25'
 
-  # Run on schedule (daily at 9:35 PM EDT / 1:35 AM UTC)
+  # Run on schedule (daily at 11:35 PM EDT / 3:35 AM UTC)
   schedule:
-    - cron: '35 1 * * *'
+    - cron: '35 3 * * *'
 
 jobs:
   scrape:
