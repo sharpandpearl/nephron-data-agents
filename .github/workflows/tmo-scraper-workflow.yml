@@ -1,4 +1,4 @@
-name: Fisher Scientific Scraper
+name: TMO Product Scraper
 
 on:
   # Run manually
