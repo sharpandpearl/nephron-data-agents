@@ -17,9 +17,9 @@ on:
         required: true
         default: '25'
 
-  # Or run on schedule (example: daily at 2 AM UTC)
-  # schedule:
-  #   - cron: '0 2 * * *'
+  # Run on schedule (daily at 9:25 PM EST / 2:25 AM UTC)
+  schedule:
+    - cron: '25 2 * * *'
 
 jobs:
   scrape:
@@ -39,10 +39,14 @@ jobs:
 
       - name: Update scraper configuration
         run: |
-          # Update START_INDEX and END_INDEX from workflow inputs
-          sed -i "s/static int START_INDEX = .*/static int START_INDEX = ${{ github.event.inputs.start_index }};/" \
+          # Set defaults for scheduled runs
+          START_INDEX="${{ github.event.inputs.start_index || '0' }}"
+          END_INDEX="${{ github.event.inputs.end_index || '-1' }}"
+
+          # Update START_INDEX and END_INDEX
+          sed -i "s/static int START_INDEX = .*/static int START_INDEX = ${START_INDEX};/" \
             java-playwright-scrapper/src/main/java/nephrontools/FischerSciScrapper.java
-          sed -i "s/static int END_INDEX = .*/static int END_INDEX = ${{ github.event.inputs.end_index }};/" \
+          sed -i "s/static int END_INDEX = .*/static int END_INDEX = ${END_INDEX};/" \
             java-playwright-scrapper/src/main/java/nephrontools/FischerSciScrapper.java
 
       - name: Install Playwright browsers
@@ -61,7 +65,7 @@ jobs:
         id: timestamp
         run: |
           TIMESTAMP=$(date -u '+%Y-%m-%d_%H%M%S')
-          TICKER="${{ github.event.inputs.company_ticker }}"
+          TICKER="${{ github.event.inputs.company_ticker || 'TMO' }}"
 
           FILENAME="playwright_scrape_results_${TIMESTAMP}.csv"
           R2_PATH="nephron-data/${TICKER}/${FILENAME}"
