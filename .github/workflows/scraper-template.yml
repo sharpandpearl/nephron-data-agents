@@ -68,14 +68,12 @@ jobs:
 
       - name: Install Playwright browsers
         run: |
-          cd ${{ inputs.module_path }}
-          mvn clean compile
-          mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"
+          mvn -pl ${{ inputs.module_path }} clean compile
+          mvn -pl ${{ inputs.module_path }} exec:java -e -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install chromium"
 
       - name: Run scraper
         run: |
-          cd ${{ inputs.module_path }}
-          mvn exec:java -Dexec.mainClass="${{ inputs.java_main_class }}"
+          mvn -pl ${{ inputs.module_path }} exec:java -Dexec.mainClass="${{ inputs.java_main_class }}"
 
       - name: Generate timestamp and rename CSV
         id: timestamp
