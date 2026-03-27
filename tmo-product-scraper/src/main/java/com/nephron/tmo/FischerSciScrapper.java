@@ -1,4 +1,4 @@
-package nephrontools;
+package com.nephron.tmo;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -21,8 +21,8 @@ public class FischerSciScrapper {
 
 	static Browser browser = null;
 	static Page page = null;
-	static String CSV_FILE_PATH = "../generated-data/TMO_Product_list_Valid_Only.csv";
-	static String OUTPUT_CSV_FILE = "../generated-data/playwright_scrape_results.csv";
+	static String CSV_FILE_PATH = "data/source/TMO_Product_list_Valid_Only.csv";
+	static String OUTPUT_CSV_FILE = "data/output/playwright_scrape_results.csv";
 	static int START_INDEX = 0;      // Start at first product (0-based index)
 	static int END_INDEX = 25;       // Test on first 25 products
 
@@ -102,12 +102,12 @@ public class FischerSciScrapper {
 			String currentDir = System.getProperty("user.dir");
 			String csvPath;
 
-			// If running from java-playwright-scrapper directory (Maven)
-			if (currentDir.endsWith("java-playwright-scrapper")) {
+			// If running from tmo-product-scraper directory (Maven)
+			if (currentDir.endsWith("tmo-product-scraper")) {
 				csvPath = Paths.get(currentDir, CSV_FILE_PATH).toString();
 			} else {
 				// If running from project root (IDE/VSCode)
-				csvPath = Paths.get(currentDir, "generated-data", "TMO_Product_list_Valid_Only.csv").toString();
+				csvPath = Paths.get(currentDir, "tmo-product-scraper", CSV_FILE_PATH).toString();
 			}
 
 			System.out.println("Current directory: " + currentDir);
@@ -339,12 +339,12 @@ public class FischerSciScrapper {
 		String currentDir = System.getProperty("user.dir");
 		String fullPath;
 
-		// If running from java-playwright-scrapper directory (Maven)
-		if (currentDir.endsWith("java-playwright-scrapper")) {
+		// If running from tmo-product-scraper directory (Maven)
+		if (currentDir.endsWith("tmo-product-scraper")) {
 			fullPath = Paths.get(currentDir, filePath).toString();
 		} else {
 			// If running from project root (IDE/VSCode)
-			fullPath = Paths.get(currentDir, "generated-data", "playwright_scrape_results.csv").toString();
+			fullPath = Paths.get(currentDir, "tmo-product-scraper", filePath).toString();
 		}
 
 		FileWriter fileWriter = new FileWriter(fullPath);

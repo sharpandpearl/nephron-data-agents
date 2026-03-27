@@ -1,4 +1,4 @@
-package nephrontools;
+package com.nephron.tmo;
 
 /**
  * Data model for Fisher Scientific product information

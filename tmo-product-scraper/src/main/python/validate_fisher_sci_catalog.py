@@ -12,8 +12,8 @@ import time
 from datetime import datetime
 
 # Configuration
-INPUT_CSV = 'source-data/TMO_Product_list.csv'
-OUTPUT_CSV = 'generated-data/TMO_Product_list_Validated.csv'
+INPUT_CSV = 'data/source/TMO_Product_list.csv'
+OUTPUT_CSV = 'data/output/TMO_Product_list_Validated.csv'
 MAX_WORKERS = 10  # Number of concurrent requests
 TIMEOUT = 5  # Timeout in seconds for each request
 PROGRESS_INTERVAL = 100  # Print progress every N products

@@ -1,0 +1,121 @@
+name: Scraper Template (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      scraper_name:
+        description: 'Human-readable name of the scraper'
+        required: true
+        type: string
+      company_ticker:
+        description: 'Company ticker symbol (e.g., TMO, PFE)'
+        required: true
+        type: string
+      module_path:
+        description: 'Path to Maven module (e.g., tmo-product-scraper)'
+        required: true
+        type: string
+      java_main_class:
+        description: 'Fully qualified main class name'
+        required: true
+        type: string
+      start_index:
+        description: 'Start index for scraping'
+        required: false
+        type: string
+        default: '0'
+      end_index:
+        description: 'End index for scraping (-1 for all)'
+        required: false
+        type: string
+        default: '-1'
+    secrets:
+      R2_ACCESS_KEY_ID:
+        required: true
+      R2_SECRET_ACCESS_KEY:
+        required: true
+
+jobs:
+  scrape:
+    name: ${{ inputs.scraper_name }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build shared library
+        run: mvn -pl shared-lib clean install -DskipTests
+
+      - name: Update scraper configuration
+        run: |
+          # Set defaults for scheduled runs
+          START_INDEX="${{ inputs.start_index }}"
+          END_INDEX="${{ inputs.end_index }}"
+
+          # Update START_INDEX and END_INDEX
+          sed -i "s/static int START_INDEX = .*/static int START_INDEX = ${START_INDEX};/" \
+            ${{ inputs.module_path }}/src/main/java/com/nephron/${{ inputs.company_ticker }}/FischerSciScrapper.java
+          sed -i "s/static int END_INDEX = .*/static int END_INDEX = ${END_INDEX};/" \
+            ${{ inputs.module_path }}/src/main/java/com/nephron/${{ inputs.company_ticker }}/FischerSciScrapper.java
+
+      - name: Install Playwright browsers
+        run: |
+          cd ${{ inputs.module_path }}
+          mvn clean compile
+          mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"
+
+      - name: Run scraper
+        run: |
+          cd ${{ inputs.module_path }}
+          mvn exec:java -Dexec.mainClass="${{ inputs.java_main_class }}"
+
+      - name: Generate timestamp and rename CSV
+        id: timestamp
+        run: |
+          TIMESTAMP=$(date -u '+%Y-%m-%d_%H%M%S')
+          TICKER="${{ inputs.company_ticker }}"
+
+          FILENAME="playwright_scrape_results_${TIMESTAMP}.csv"
+          R2_PATH="nephron-data/${TICKER}/${FILENAME}"
+
+          # Rename the file from module output directory
+          mv ${{ inputs.module_path }}/data/output/playwright_scrape_results.csv "${{ inputs.module_path }}/data/output/${FILENAME}"
+
+          # Export for next steps
+          echo "filename=${FILENAME}" >> $GITHUB_OUTPUT
+          echo "r2_path=${R2_PATH}" >> $GITHUB_OUTPUT
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+
+          echo "Generated filename: ${FILENAME}"
+          echo "Will upload to: ${R2_PATH}"
+
+      - name: Upload to Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: https://203c00261e5e7220493ac31a64043f00.r2.cloudflarestorage.com
+        run: |
+          # AWS CLI is pre-installed on GitHub runners
+          aws --version
+
+          # Upload to R2 (S3-compatible)
+          aws s3 cp \
+            "${{ inputs.module_path }}/data/output/${{ steps.timestamp.outputs.filename }}" \
+            "s3://${{ steps.timestamp.outputs.r2_path }}" \
+            --endpoint-url $AWS_ENDPOINT_URL
+
+          echo "✅ Successfully uploaded to R2: ${{ steps.timestamp.outputs.r2_path }}"
+
+      - name: Upload scrape results (GitHub artifact backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.company_ticker }}-scrape-results-${{ github.run_number }}
+          path: ${{ inputs.module_path }}/data/output/${{ steps.timestamp.outputs.filename }}

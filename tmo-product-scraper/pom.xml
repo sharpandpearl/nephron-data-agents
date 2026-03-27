@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.nephron</groupId>
+        <artifactId>data-scrapers</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>tmo-product-scraper</artifactId>
+    <packaging>jar</packaging>
+
+    <name>TMO Product Scraper</name>
+    <description>Web scraper for Thermo Fisher Scientific (TMO) products using Playwright for Java</description>
+
+    <dependencies>
+        <!-- Shared Library -->
+        <dependency>
+            <groupId>com.nephron</groupId>
+            <artifactId>shared-lib</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Playwright for Java (inherited version from parent) -->
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,388 +1,321 @@
-# Fisher Scientific Product Scraper
+# Nephron Data Scrapers
 
-Web scraper and catalog validator for extracting product data from Fisher Scientific's website.
+**Scalable multi-module web scraping framework for pharmaceutical product data**
 
-## Project Overview
+## Overview
 
-This repository contains tools for validating and scraping Fisher Scientific product catalogs:
+This project provides automated data collection tools for pharmaceutical and life sciences product catalogs. Built as a Maven multi-module project, it's designed to scale from a single scraper to 50+ independent data collection modules.
 
-1. **Python Validator** - Fast HTTP-based catalog ID validation (~6 IDs/sec)
-2. **Java Playwright Scraper** - Browser-based scraping with detailed product data
-3. **CSV Data Processing** - Input/output handling for catalog numbers and results
+### Current Capabilities
+- ✅ **TMO (Thermo Fisher Scientific)** - Product catalog scraper with 2,891 validated products
+- ✅ **Fast HTTP validation** - Validate thousands of catalog IDs in minutes
+- ✅ **Browser automation** - Extract detailed product data with Playwright
+- ✅ **Cloud storage** - Automatic upload to Cloudflare R2
+- ✅ **GitHub Actions** - Scheduled scraping with parallel execution support
+
+## Quick Start
+
+### Prerequisites
+- **Java 21+** ([Download](https://adoptium.net/))
+- **Maven 3.9.12+** ([Download](https://maven.apache.org/download.cgi))
+- **Python 3.12+** (optional, for validators)
+
+### Build & Run
+
+```bash
+# Clone repository
+git clone https://github.com/sharpandpearl/nephron-data-agents.git
+cd nephron-data-agents
+
+# Build all modules
+mvn clean install
+
+# Run TMO scraper (first 25 products)
+cd tmo-product-scraper
+mvn exec:java -Dexec.mainClass="com.nephron.tmo.FischerSciScrapper"
+```
+
+**Output**: Results saved to `tmo-product-scraper/data/output/playwright_scrape_results.csv`
 
 ## Project Structure
 
 ```
 nephron-data-agents/
-├── source-data/                        # Input data files (never modify)
-│   └── TMO_Product_list.csv           # Source catalog IDs (8,675 products)
-│
-├── generated-data/                     # All output files (auto-generated)
-│   ├── TMO_Product_list_Validated.csv # Full validation results
-│   ├── TMO_Product_list_Valid_Only.csv # Valid products only
-│   ├── TMO_Valid_CatalogIDs.txt       # Valid IDs (text file)
-│   └── playwright_scrape_results.csv  # Java Playwright scrape results
-│
-├── java-playwright-scrapper/           # Java browser automation
-│   ├── src/main/java/nephrontools/
-│   │   ├── FischerSciScrapper.java    # Main scraper
-│   │   └── FischerSciProduct.java     # Data model
-│   ├── pom.xml                         # Maven config
-│   └── target/                         # Build artifacts
-│
-└── validate_fisher_sci_catalog.py     # Fast HTTP-based validator
+├── pom.xml                      # Parent POM - manages all modules
+├── shared-lib/                  # Common utilities (browser, CSV, dates)
+├── tmo-product-scraper/         # Thermo Fisher scraper
+│   ├── data/
+│   │   ├── source/              # Input catalog IDs
+│   │   └── output/              # Generated results
+│   └── src/main/
+│       ├── java/                # Java scraper
+│       └── python/              # Python validator
+└── .github/workflows/           # CI/CD automation
 ```
 
-## Quick Start
+## Features
 
-### Option 1: Validate Catalog IDs (Fastest - Recommended)
+### Multi-Module Maven Architecture
+- **Shared Library**: Reusable browser automation, CSV handling, and date utilities
+- **Independent Modules**: Each scraper is self-contained with its own data and configuration
+- **Scalable**: Add new scrapers without modifying existing code
 
-**Purpose:** Quickly validate which catalog IDs exist on Fisher Scientific's website.
+### Data Collection Tools
 
-**Features:**
-- ✅ Validates 8,675 products in ~24 minutes
-- ✅ HTTP-based (no browser needed)
-- ✅ Concurrent requests (10 workers)
-- ✅ Conservative validation (checks URL patterns)
-- ✅ Test mode for trying samples
-
-**Usage:**
+#### 1. Python Validator (Fast)
+Quickly validate which catalog IDs exist on a website using HTTP requests.
 
 ```bash
-# Validate all catalog IDs (production mode)
-python validate_fisher_sci_catalog.py
-
-# Test mode (first 1,000 products)
-# Edit validate_fisher_sci_catalog.py: TEST_MODE = True
-python validate_fisher_sci_catalog.py
+cd tmo-product-scraper
+python src/main/python/validate_fisher_sci_catalog.py
 ```
 
-**Configuration:**
+**Performance**: ~6 IDs/second | 8,675 products validated in 24 minutes
 
-```python
-# In validate_fisher_sci_catalog.py
-INPUT_CSV = 'source-data/TMO_Product_list.csv'
-OUTPUT_CSV = 'generated-data/TMO_Product_list_Validated.csv'
-MAX_WORKERS = 10        # Concurrent requests
-TIMEOUT = 5             # Timeout per request (seconds)
-TEST_MODE = False       # Set True for testing
-TEST_LIMIT = 1000       # Test mode limit
-```
-
-**Validation Results (from 8,675 products):**
-- ✅ Valid: 2,892 products (33%)
-- ❌ Invalid: 5,782 products (66%)
-- ⚠️ Errors: 1 timeout (0%)
-- ⚡ Throughput: 6.1 IDs/second
-
-**Output Files:**
-- `generated-data/TMO_Product_list_Validated.csv` - All results with status
-- `generated-data/TMO_Product_list_Valid_Only.csv` - Valid products only
-- `generated-data/TMO_Valid_CatalogIDs.txt` - Valid IDs (one per line)
-
-### Option 2: Scrape Product Details (Slower, More Data)
-
-**Purpose:** Extract detailed product information (name, price, etc.) using a browser.
-
-**Features:**
-- ✅ Extracts product name, price, availability
-- ✅ Detects login requirements
-- ✅ Configurable range (for testing)
-- ✅ CSV output format
-
-**Usage:**
+#### 2. Java Playwright Scraper (Detailed)
+Extract complete product information using browser automation.
 
 ```bash
-cd java-playwright-scrapper
-mvn clean compile
-mvn exec:java -Dexec.mainClass="nephrontools.FischerSciScrapper"
+cd tmo-product-scraper
+mvn exec:java -Dexec.mainClass="com.nephron.tmo.FischerSciScrapper"
 ```
 
-**Configuration:**
+**Performance**: ~0.3-0.5 products/second | Full details: name, price, availability
 
+### GitHub Actions Automation
+
+Automated scraping runs nightly with:
+- ✅ Scheduled execution (configurable cron)
+- ✅ Manual triggers with custom parameters
+- ✅ Parallel execution (4+ concurrent jobs)
+- ✅ Automatic upload to Cloudflare R2
+- ✅ GitHub artifact backups
+
+## Usage
+
+### Scraping TMO Products
+
+**Configuration** (in `FischerSciScrapper.java`):
 ```java
-// In FischerSciScrapper.java
-static String CSV_FILE_PATH = "../generated-data/TMO_Product_list_Valid_Only.csv";
-static String OUTPUT_CSV_FILE = "../generated-data/playwright_scrape_results.csv";
-static int START_INDEX = 0;      // Start at first product
-static int END_INDEX = 10;       // End at 10th product (-1 for all)
+static int START_INDEX = 0;      // First product
+static int END_INDEX = 25;       // Last product (-1 for all)
 ```
 
-**Output Files:**
-- `generated-data/playwright_scrape_results.csv` - Full product data and prices
-
-## Requirements
-
-### Python Validator
-- Python 3.12+
-- Dependencies: `pandas`, `requests`
-
+**Run locally**:
 ```bash
-pip install pandas requests
+cd tmo-product-scraper
+mvn clean compile
+mvn exec:java -Dexec.mainClass="com.nephron.tmo.FischerSciScrapper"
 ```
 
-### Java Playwright Scraper
-- Java 21+
-- Maven 3.9.12+
+**Trigger via GitHub Actions**:
+1. Go to repository → Actions tab
+2. Select "TMO Product Scraper"
+3. Click "Run workflow"
+4. Set parameters (start_index, end_index)
 
-## Validation Logic
+### Validating Catalog IDs
 
-The validator uses a **conservative validation approach** to ensure accuracy:
-
-### Valid Product Criteria:
-1. ✅ HTTP 200 response
-2. ✅ Redirects to product page: `/shop/products/{slug}/{catalog-id}`
-3. ✅ URL path ends with the catalog ID
-
-### Invalid Product Detection:
-- ❌ "No results found" or "0 results" in content
-- ❌ Stays on search results page
-- ❌ URL doesn't end with catalog ID
-- ❌ HTTP 404 or 403 errors
-
-### Example URLs:
-
-**Valid:**
-```
-https://www.fishersci.com/shop/products/stainless-steel-piston-pump/010075
-                                       ^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^
-                                       product-slug              catalog-id
-```
-
-**Invalid:**
-```
-https://www.fishersci.com/us/en/catalog/search/products?keyword=011890102
-(Stays on search page - product not available)
-```
-
-## Features Comparison
-
-| Tool | Speed | Data Depth | Browser | Use Case |
-|------|-------|------------|---------|----------|
-| **Python Validator** | ⚡ 6.1/s | Basic (exists?) | ❌ No | Validate catalog IDs |
-| **Java Playwright** | 🐌 ~0.2/s | Detailed | ✅ Yes | Product details + prices |
-
-## Recommended Workflows
-
-### Workflow 1: Validate & Filter (Recommended)
-
-```bash
-# Step 1: Validate all catalog IDs (24 minutes)
-python validate_fisher_sci_catalog.py
-
-# Step 2: Review results
-cat generated-data/TMO_Product_list_Validated.csv
-
-# Step 3: Extract valid IDs only (already done by validator)
-# File: generated-data/TMO_Product_list_Valid_Only.csv
-
-# Result: 2,892 valid catalog IDs ready for scraping
-```
-
-### Workflow 2: Scrape Product Details
-
-```bash
-# Use the 2,892 valid catalog IDs as input
-cd java-playwright-scrapper
-
-# Configure range in FischerSciScrapper.java
-# START_INDEX = 0
-# END_INDEX = 100  # Or -1 for all 2,892 valid products
-
-mvn clean compile exec:java -Dexec.mainClass="nephrontools.FischerSciScrapper"
-```
-
-### Workflow 3: Test Before Production
-
-```bash
-# Test validation on first 100 products
-# Edit validate_fisher_sci_catalog.py: TEST_MODE = True, TEST_LIMIT = 100
-python validate_fisher_sci_catalog.py
-
-# Test scraping on first 10 products
-# FischerSciScrapper.java already defaults to END_INDEX = 10
-cd java-playwright-scrapper
-mvn exec:java -Dexec.mainClass="nephrontools.FischerSciScrapper"
-```
-
-## Performance Statistics
-
-### Full Validation Run (8,675 products)
-```
-Total Processed:    8,675
-Valid Products:     2,892 (33%)
-Invalid Products:   5,782 (66%)
-Errors/Timeouts:    1 (0%)
-Total Time:         23m 51s
-Average Time/ID:    0.16s
-Throughput:         6.1 IDs/second
-```
-
-### Estimated Time Comparisons
-
-| Task | Products | Python Validator | Java Playwright |
-|------|----------|------------------|-----------------|
-| Validate 8,675 | Full dataset | 24 min | N/A |
-| Scrape 2,892 | Valid only | N/A | ~4 hours |
-| Test 100 | Sample | 16 sec | ~8 min |
-
-## Best Practices
-
-### Rate Limiting
-- ✅ Validator: Uses concurrent requests with timeout
-- ✅ Scraper: 2-second delay between requests
-- ✅ Respects website policies
-
-### Error Handling
-- ✅ Timeout handling (5s for validator, 3s page wait for scraper)
-- ✅ Connection error recovery
-- ✅ Invalid product detection
-- ✅ Progress tracking with ETA
-
-### Data Quality
-- ✅ Conservative validation (only mark valid if URL confirms)
-- ✅ Checks actual product page URLs
-- ✅ Detects "LOGIN_REQUIRED" for restricted products
-- ✅ Filters out search results pages
-
-## Troubleshooting
-
-### Python Validator Issues
-
-**FileNotFoundError:**
-```bash
-# Ensure source data exists
-ls -la source-data/TMO_Product_list.csv
-
-# Check file path in script
-grep INPUT_CSV validate_fisher_sci_catalog.py
-```
-
-**Slow validation:**
+**Configuration** (in `validate_fisher_sci_catalog.py`):
 ```python
-# Increase workers (max 20 recommended)
-MAX_WORKERS = 15
-
-# Decrease timeout (min 3s recommended)
-TIMEOUT = 3
+INPUT_CSV = 'data/source/TMO_Product_list.csv'
+OUTPUT_CSV = 'data/output/TMO_Product_list_Validated.csv'
+TEST_MODE = False  # Set True for testing first 1,000 IDs
 ```
 
-### Java Scraper Issues
-
-**Maven not found:**
+**Run**:
 ```bash
-mvn --version
-# If not found, ensure Maven is installed and on PATH
+cd tmo-product-scraper
+python src/main/python/validate_fisher_sci_catalog.py
 ```
 
-**Compilation errors:**
+## Adding a New Scraper
+
+To add a scraper for another company (e.g., Pfizer):
+
+### 1. Create Module Structure
 ```bash
-cd java-playwright-scrapper
+mkdir -p pfizer-inventory-scraper/src/main/java/com/nephron/pfizer
+mkdir -p pfizer-inventory-scraper/data/{source,output}
+```
+
+### 2. Create Module POM
+```xml
+<!-- pfizer-inventory-scraper/pom.xml -->
+<project>
+    <parent>
+        <groupId>com.nephron</groupId>
+        <artifactId>data-scrapers</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>pfizer-inventory-scraper</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.nephron</groupId>
+            <artifactId>shared-lib</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</project>
+```
+
+### 3. Update Parent POM
+Add module to root `pom.xml`:
+```xml
+<modules>
+    <module>shared-lib</module>
+    <module>tmo-product-scraper</module>
+    <module>pfizer-inventory-scraper</module>  <!-- NEW -->
+</modules>
+```
+
+### 4. Create Scraper Class
+```java
+package com.nephron.pfizer;
+
+import com.nephron.shared.browser.BrowserManager;
+import com.microsoft.playwright.*;
+
+public class PfizerScraper {
+    public static void main(String[] args) {
+        Playwright playwright = Playwright.create();
+        Browser browser = BrowserManager.launchBrowser(playwright, true);
+        // Your scraping logic here
+    }
+}
+```
+
+### 5. Build & Test
+```bash
 mvn clean install
+cd pfizer-inventory-scraper
+mvn exec:java -Dexec.mainClass="com.nephron.pfizer.PfizerScraper"
 ```
 
-**CSV file not found:**
-```bash
-# Verify source data location
-ls -la generated-data/TMO_Product_list_Valid_Only.csv
-```
+See [CLAUDE.md](CLAUDE.md) for complete developer documentation.
 
-### General Issues
+## Data Output
 
-**Output files not created:**
-```bash
-# Ensure output directory exists
-mkdir -p generated-data
+### CSV Format
+All scrapers output CSV files with standardized columns:
 
-# Check write permissions
-ls -ld generated-data/
-```
-
-## File Formats
-
-### Input: TMO_Product_list.csv
-```csv
-003002,010075,0102322A,01060A,011045A,011045H,...
-```
-- Format: Single-line, comma-separated
-- Total: 8,675 catalog IDs
-- Location: `source-data/TMO_Product_list.csv`
-
-### Output: Validation Results (CSV)
-```csv
-ProductID,Status,ResponseTime_s
-003002,Invalid (Not Found),1.23
-010075,Valid,0.87
-011890102,Invalid (Not Found),1.45
-```
-
-### Output: Scrape Results (CSV)
 ```csv
 CatalogNo,ProductName,Price,ScrapeDate
-01060A,Thermo Scientific™ Nalgene™ Vacuum Chamber,602.00,2026-03-25T19:33:35Z
-010075,Action Pump Stainless-Steel Piston Pump,398.50,2026-03-25T19:33:52Z
+010075,Action Pump Stainless-Steel Piston Pump,398.50,2026-03-26T14:30:00Z
+01060A,Thermo Scientific™ Nalgene™ Vacuum Chamber,602.00,2026-03-26T14:30:15Z
 ```
 
-### Output: Valid IDs Only (TXT)
+### Cloud Storage (Cloudflare R2)
+GitHub Actions automatically uploads results to:
 ```
-010075
-0102322A
-01060A
-011045H
-...
+nephron-data/
+└── TMO/
+    ├── playwright_scrape_results_2026-03-26_143000.csv
+    ├── playwright_scrape_results_2026-03-27_143000.csv
+    └── ...
 ```
+
+## Performance
+
+| Tool | Speed | Use Case | Time for 2,891 Products |
+|------|-------|----------|------------------------|
+| **Python Validator** | 6.1 IDs/sec | Validate which IDs exist | ~8 minutes |
+| **Java Scraper (Single)** | 0.3-0.5 products/sec | Full product details | ~2-3 hours |
+| **Java Scraper (Parallel)** | 1.2-2.0 products/sec | Full details (4 workers) | ~30-45 minutes |
 
 ## Technology Stack
 
-### Java Module
-- **Java Version**: 21
-- **Build Tool**: Maven 3.9.12
-- **Dependencies**:
-  - Playwright for Java 1.49.0 (browser automation)
+- **Java 21** - Modern LTS with pattern matching and records
+- **Maven** - Multi-module build system
+- **Playwright for Java 1.49.0** - Browser automation
+- **Python 3.12** - Fast HTTP validation scripts
+- **GitHub Actions** - CI/CD and scheduled scraping
+- **Cloudflare R2** - S3-compatible cloud storage
 
-### Python Module
-- **Python Version**: 3.12+
-- **Dependencies**:
-  - pandas (CSV processing)
-  - requests (HTTP validation)
+## Project Metrics
+
+### TMO Product Scraper
+- **Total Catalog IDs**: 8,675
+- **Valid Products**: 2,892 (33%)
+- **Invalid/Discontinued**: 5,782 (67%)
+- **Validation Time**: 24 minutes (full dataset)
+- **Scraping Time**: ~2 hours (all valid products)
+
+## Development
+
+### Build Commands
+```bash
+# Build everything
+mvn clean install
+
+# Build shared library only
+mvn -pl shared-lib clean install
+
+# Build specific module
+mvn -pl tmo-product-scraper clean install
+
+# Run tests
+mvn test
+
+# Clean all build artifacts
+mvn clean
+```
+
+### Testing
+```bash
+# Test with first 10 products
+cd tmo-product-scraper
+# Edit FischerSciScrapper.java: END_INDEX = 10
+mvn exec:java -Dexec.mainClass="com.nephron.tmo.FischerSciScrapper"
+```
+
+## Troubleshooting
+
+### Maven Build Fails
+```bash
+# Verify Java version
+java -version  # Should be 21+
+
+# Clean and rebuild
+mvn clean install
+
+# Build with debug output
+mvn clean install -X
+```
+
+### Module Not Found
+- Check parent POM lists module in `<modules>` section
+- Ensure module POM has correct `<parent>` reference
+- Build shared-lib first: `mvn -pl shared-lib install`
+
+### Scraper Can't Find CSV
+- Verify files exist in `data/source/`
+- Check you're running from correct directory
+- Review console output for resolved file paths
+
+## Contributing
+
+When adding new scrapers:
+1. ✅ Follow package naming: `com.nephron.[ticker]`
+2. ✅ Use shared-lib utilities where possible
+3. ✅ Add data files to `[module]/data/source/`
+4. ✅ Output to `[module]/data/output/`
+5. ✅ Create GitHub Actions workflow
 
 ## License
 
 Same as original project.
 
-## Contributors
-
-- Original Author: andri
-- Modernization & Updates: Claude (Anthropic)
-
 ## Resources
 
-- [Fisher Scientific](https://www.fishersci.com/)
-- [Python Requests](https://requests.readthedocs.io/)
-- [Playwright](https://playwright.dev/)
-- [Model Context Protocol](https://modelcontextprotocol.io/)
+- **Repository**: https://github.com/sharpandpearl/nephron-data-agents
+- **Issues**: https://github.com/sharpandpearl/nephron-data-agents/issues
+- **Playwright Docs**: https://playwright.dev/java/
+- **Maven Multi-Module**: https://maven.apache.org/guides/mini/guide-multiple-modules.html
 
 ---
 
-## Recommended Approach
-
-**For most users:**
-
-1. **Start with validation** (24 minutes):
-   ```bash
-   python validate_fisher_sci_catalog.py
-   ```
-
-2. **Review valid products** (2,892 found):
-   ```bash
-   head generated-data/TMO_Valid_CatalogIDs.txt
-   ```
-
-3. **Scrape details only for valid products**:
-   ```bash
-   cd java-playwright-scrapper
-   # Configure range in FischerSciScrapper.java
-   mvn exec:java -Dexec.mainClass="nephrontools.FischerSciScrapper"
-   ```
-
-This approach saves time by validating first, then scraping only valid products! 🚀
+**Maintained by**: Nephron Team
+**Last Updated**: 2026-03-26
