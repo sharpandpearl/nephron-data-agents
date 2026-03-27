@@ -51,6 +51,9 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Install parent POM
+        run: mvn -N install
+
       - name: Build shared library
         run: mvn -pl shared-lib clean install -DskipTests
 
