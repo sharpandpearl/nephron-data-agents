@@ -1,0 +1,193 @@
+name: Stock Sentiment Analysis Template (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      ticker:
+        description: 'Stock ticker symbol (e.g., TMO, RVTY, A)'
+        required: true
+        type: string
+      company_name:
+        description: 'Full company name (e.g., "Thermo Fisher Scientific")'
+        required: true
+        type: string
+      analysis_days:
+        description: 'Number of days to analyze (default: 30)'
+        required: false
+        type: number
+        default: 30
+    secrets:
+      R2_ACCESS_KEY_ID:
+        required: true
+      R2_SECRET_ACCESS_KEY:
+        required: true
+      GEMINI_API_KEY:
+        required: true
+      NEWS_API_KEY:
+        required: true
+      ALPHA_VANTAGE_API_KEY:
+        required: true
+      SCRAPECREATORS_API_KEY:
+        required: true
+      NCBI_API_KEY:
+        required: false
+
+jobs:
+  analyze:
+    name: Sentiment Analysis - ${{ inputs.ticker }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: 📦 Install Python dependencies
+        run: |
+          echo "Installing sentiment analysis dependencies..."
+          pip install -r stock-sentiment-scraper/requirements.txt
+          echo "✅ Dependencies installed successfully"
+
+      - name: 🔑 Configure API keys
+        run: |
+          echo "Setting up API credentials..."
+          cat > .env << EOF
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          NEWS_API_KEY=${{ secrets.NEWS_API_KEY }}
+          ALPHA_VANTAGE_API_KEY=${{ secrets.ALPHA_VANTAGE_API_KEY }}
+          SCRAPECREATORS_API_KEY=${{ secrets.SCRAPECREATORS_API_KEY }}
+          NCBI_API_KEY=${{ secrets.NCBI_API_KEY }}
+          EOF
+          echo "✅ API keys configured"
+
+      - name: 📊 Run sentiment analysis
+        id: analyze
+        run: |
+          echo "=================================================="
+          echo "Stock Sentiment Analysis - ${{ inputs.ticker }}"
+          echo "Company: ${{ inputs.company_name }}"
+          echo "Analysis Period: ${{ inputs.analysis_days }} days"
+          echo "=================================================="
+          echo ""
+
+          cd stock-sentiment-scraper
+
+          echo "🔍 Phase 1: Data Aggregation (6 sources in parallel)"
+          echo "  - FDA (Regulatory data)"
+          echo "  - SEC Edgar (Financial filings)"
+          echo "  - NewsAPI (News articles)"
+          echo "  - Alpha Vantage (Financial news + sentiment)"
+          echo "  - PubMed (Medical literature)"
+          echo "  - Reddit (Social media)"
+          echo ""
+
+          echo "🧠 Phase 2: VADER Sentiment Analysis"
+          echo "  - Domain-specific pharma/biotech rules"
+          echo "  - Sentiment scoring (-1.0 to +1.0)"
+          echo ""
+
+          echo "🤖 Phase 3: AI Synthesis (Google Gemini)"
+          echo "  - Executive summary generation"
+          echo "  - Key findings extraction"
+          echo ""
+
+          echo "📈 Phase 4: Visualization"
+          echo "  - Sentiment trend chart generation"
+          echo ""
+
+          echo "📄 Phase 5: Report Generation"
+          echo "  - PDF report with charts"
+          echo "  - JSON data export"
+          echo ""
+
+          echo "Starting analysis pipeline..."
+          echo "=================================================="
+          echo ""
+
+          # Run sentiment analysis (output is already detailed via stderr)
+          python src/main/python/main_pipeline.py "${{ inputs.ticker }}" "${{ inputs.company_name }}" ${{ inputs.analysis_days }}
+
+          TIMESTAMP=$(date -u '+%Y-%m-%d_%H%M%S')
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo ""
+          echo "✅ Analysis complete!"
+
+      - name: 📁 List generated files
+        run: |
+          echo "Generated files:"
+          ls -lh stock-sentiment-scraper/data/output/ | grep "${{ inputs.ticker }}"
+
+      - name: ☁️ Upload to Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: https://203c00261e5e7220493ac31a64043f00.r2.cloudflarestorage.com
+        run: |
+          echo "=================================================="
+          echo "Uploading results to Cloudflare R2..."
+          echo "=================================================="
+
+          TICKER="${{ inputs.ticker }}"
+          TIMESTAMP="${{ steps.analyze.outputs.timestamp }}"
+
+          # Find the latest files for this ticker
+          cd stock-sentiment-scraper/data/output
+          JSON_FILE=$(ls -t ${TICKER}_sentiment_*.json | head -1)
+          PDF_FILE=$(ls -t ${TICKER}_sentiment_*.pdf | head -1)
+
+          if [ -z "$JSON_FILE" ] || [ -z "$PDF_FILE" ]; then
+            echo "❌ Error: Output files not found"
+            exit 1
+          fi
+
+          echo "Files to upload:"
+          echo "  📄 JSON: $JSON_FILE ($(du -h $JSON_FILE | cut -f1))"
+          echo "  📄 PDF: $PDF_FILE ($(du -h $PDF_FILE | cut -f1))"
+          echo ""
+
+          # Upload JSON
+          echo "Uploading JSON..."
+          aws s3 cp "$JSON_FILE" \
+            "s3://nephron-data/${TICKER}/sentiment/${JSON_FILE}" \
+            --endpoint-url $AWS_ENDPOINT_URL
+
+          echo "✅ JSON uploaded: nephron-data/${TICKER}/sentiment/${JSON_FILE}"
+
+          # Upload PDF
+          echo "Uploading PDF..."
+          aws s3 cp "$PDF_FILE" \
+            "s3://nephron-data/${TICKER}/sentiment/${PDF_FILE}" \
+            --endpoint-url $AWS_ENDPOINT_URL
+
+          echo "✅ PDF uploaded: nephron-data/${TICKER}/sentiment/${PDF_FILE}"
+          echo ""
+          echo "=================================================="
+          echo "✅ All files uploaded successfully to R2"
+          echo "=================================================="
+
+      - name: 📦 Upload to GitHub Artifacts (Backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.ticker }}-sentiment-${{ github.run_number }}
+          path: |
+            stock-sentiment-scraper/data/output/${{ inputs.ticker }}_sentiment_*.json
+            stock-sentiment-scraper/data/output/${{ inputs.ticker }}_sentiment_*.pdf
+          retention-days: 30
+
+      - name: 📊 Analysis Summary
+        if: always()
+        run: |
+          echo ""
+          echo "=================================================="
+          echo "Analysis Summary - ${{ inputs.ticker }}"
+          echo "=================================================="
+          echo "Company: ${{ inputs.company_name }}"
+          echo "Period: ${{ inputs.analysis_days }} days"
+          echo "Status: ${{ job.status }}"
+          echo "Timestamp: ${{ steps.analyze.outputs.timestamp }}"
+          echo "=================================================="
