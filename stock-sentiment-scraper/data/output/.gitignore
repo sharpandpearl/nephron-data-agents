@@ -1,0 +1,7 @@
+# Ignore all generated sentiment analysis reports
+*.json
+*.pdf
+*.png
+
+# But keep this directory in git
+!.gitignore

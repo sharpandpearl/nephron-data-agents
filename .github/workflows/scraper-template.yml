@@ -63,11 +63,14 @@ jobs:
           START_INDEX="${{ inputs.start_index }}"
           END_INDEX="${{ inputs.end_index }}"
 
-          # Update START_INDEX and END_INDEX
+          # Java packages must be lowercase, but tickers are uppercase for display
+          PACKAGE_NAME=$(echo "${{ inputs.company_ticker }}" | tr '[:upper:]' '[:lower:]')
+
+          # Update START_INDEX and END_INDEX in the Java source file
           sed -i "s/static int START_INDEX = .*/static int START_INDEX = ${START_INDEX};/" \
-            ${{ inputs.module_path }}/src/main/java/com/nephron/${{ inputs.company_ticker }}/FischerSciScrapper.java
+            ${{ inputs.module_path }}/src/main/java/com/nephron/${PACKAGE_NAME}/FischerSciScrapper.java
           sed -i "s/static int END_INDEX = .*/static int END_INDEX = ${END_INDEX};/" \
-            ${{ inputs.module_path }}/src/main/java/com/nephron/${{ inputs.company_ticker }}/FischerSciScrapper.java
+            ${{ inputs.module_path }}/src/main/java/com/nephron/${PACKAGE_NAME}/FischerSciScrapper.java
 
       - name: Install Playwright browsers
         run: |

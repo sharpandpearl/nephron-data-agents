@@ -1,0 +1,11 @@
+# Source data directory for future input CSV files
+# Keep directory structure in git but ignore data files for now
+
+# Ignore all data files
+*.csv
+*.txt
+*.xlsx
+
+# But keep this directory in git
+!.gitignore
+!README.md
