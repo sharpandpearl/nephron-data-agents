@@ -22,7 +22,7 @@ jobs:
     uses: ./.github/workflows/scraper-template.yml
     with:
       scraper_name: 'TMO Product Scraper'
-      company_ticker: 'tmo'
+      company_ticker: 'TMO'
       module_path: 'tmo-product-scraper'
       java_main_class: 'com.nephron.tmo.FischerSciScrapper'
       start_index: ${{ github.event.inputs.start_index || '0' }}
