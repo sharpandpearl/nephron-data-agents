@@ -11,7 +11,7 @@ jobs:
     with:
       ticker: 'TMO'
       company_name: 'Thermo Fisher Scientific'
-      analysis_days: 365
+      analysis_days: 30
     secrets:
       R2_ACCESS_KEY_ID: ${{ secrets.NEPHRON_R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.NEPHRON_R2_SECRET_ACCESS_KEY }}
